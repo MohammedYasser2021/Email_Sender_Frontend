@@ -1,12 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Mail, Upload, Users, Send, Plus, Trash2, FileText, Image, Video, Paperclip, Download, Edit, Power, X, LogIn } from 'lucide-react';
-import Select, { MultiValue } from 'react-select';
+import Select from 'react-select';
 import "./App.css"; // Keep if you have custom CSS, but we'll use Tailwind primarily
 import NewCustomAlert from "./NewCustomAlert";
 
 // Custom styles for react-select - clean and modern
 const selectStyles = {
-  control: (base: any) => ({
+  control: (base) => ({
     ...base,
     minHeight: '42px',
     border: '1px solid #e2e8f0',
@@ -17,18 +17,18 @@ const selectStyles = {
     },
     backgroundColor: 'white',
   }),
-  multiValue: (base: any) => ({
+  multiValue: (base) => ({
     ...base,
     backgroundColor: '#f1f5f9',
     borderRadius: '6px',
     padding: '2px 4px',
   }),
-  multiValueLabel: (base: any) => ({
+  multiValueLabel: (base) => ({
     ...base,
     color: '#334155',
     fontSize: '13px',
   }),
-  multiValueRemove: (base: any) => ({
+  multiValueRemove: (base) => ({
     ...base,
     color: '#94a3b8',
     '&:hover': {
@@ -36,38 +36,15 @@ const selectStyles = {
       color: '#334155',
     },
   }),
-  menu: (base: any) => ({
+  menu: (base) => ({
     ...base,
     borderRadius: '8px',
     boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)',
   }),
 };
 
-interface Group {
-  id: string;
-  name: string;
-  emails: string[];
-}
-
-interface Option {
-  value: string;
-  label: string;
-}
-
 // ConfirmModal Component
-const ConfirmModal = ({
-  isOpen,
-  title,
-  message,
-  onConfirm,
-  onCancel,
-}: {
-  isOpen: boolean;
-  title: string;
-  message: string;
-  onConfirm: () => void;
-  onCancel: () => void;
-}) => {
+const ConfirmModal = ({ isOpen, title, message, onConfirm, onCancel }) => {
   if (!isOpen) return null;
 
   return (
@@ -95,15 +72,7 @@ const ConfirmModal = ({
 };
 
 // GroupEmailsModal Component
-const GroupEmailsModal = ({
-  isOpen,
-  group,
-  onClose,
-}: {
-  isOpen: boolean;
-  group: Group | null;
-  onClose: () => void;
-}) => {
+const GroupEmailsModal = ({ isOpen, group, onClose }) => {
   if (!isOpen || !group) return null;
 
   return (
@@ -129,21 +98,21 @@ const GroupEmailsModal = ({
 };
 
 // Login Component
-const Login = ({ onLogin }: { onLogin: (email: string, password: string) => Promise<void> }) => {
-  const [email, setEmail] = useState<string>('');
-  const [password, setPassword] = useState<string>('');
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [alertMessage, setAlertMessage] = useState<string>('');
-  const [alertType, setAlertType] = useState<'success' | 'error' | 'info'>('success');
-  const [openAlert, setOpenAlert] = useState<boolean>(false);
+const Login = ({ onLogin }) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [alertMessage, setAlertMessage] = useState('');
+  const [alertType, setAlertType] = useState('success');
+  const [openAlert, setOpenAlert] = useState(false);
 
-  const showCustomAlert = (msg: string, type: 'success' | 'error' | 'info' = 'success') => {
+  const showCustomAlert = (msg, type = 'success') => {
     setAlertMessage(msg);
     setAlertType(type);
     setOpenAlert(true);
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     if (!email || !password) {
       showCustomAlert('يرجى إدخال البريد الإلكتروني وكلمة المرور', 'error');
@@ -216,45 +185,46 @@ const Login = ({ onLogin }: { onLogin: (email: string, password: string) => Prom
 
 function App() {
   // Authentication state
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   // Core states
-  const [emails, setEmails] = useState<string[]>([]);
-  const [groups, setGroups] = useState<Group[]>([]);
-  const [activeTab, setActiveTab] = useState<'emails' | 'groups' | 'send'>('emails');
+  const [emails, setEmails] = useState([]);
+  const [groups, setGroups] = useState([]);
+  const [activeTab, setActiveTab] = useState('emails');
 
   // Email management states
-  const [currentEmail, setCurrentEmail] = useState<string>('');
+  const [currentEmail, setCurrentEmail] = useState('');
 
   // Group management states
-  const [newGroupName, setNewGroupName] = useState<string>('');
-  const [selectedEmailsForGroup, setSelectedEmailsForGroup] = useState<string[]>([]);
-  const [editingGroup, setEditingGroup] = useState<Group | null>(null);
+  const [newGroupName, setNewGroupName] = useState('');
+  const [selectedEmailsForGroup, setSelectedEmailsForGroup] = useState([]);
+  const [editingGroup, setEditingGroup] = useState(null);
 
   // Send email states
-  const [emailSubject, setEmailSubject] = useState<string>('');
-  const [emailContent, setEmailContent] = useState<string>('');
-  const [selectedEmailsForSend, setSelectedEmailsForSend] = useState<string[]>([]);
-  const [selectedGroupsForSend, setSelectedGroupsForSend] = useState<string[]>([]);
-  const [attachments, setAttachments] = useState<File[]>([]);
+  const [emailSubject, setEmailSubject] = useState('');
+  const [emailContent, setEmailContent] = useState('');
+  const [selectedEmailsForSend, setSelectedEmailsForSend] = useState([]);
+  const [selectedGroupsForSend, setSelectedGroupsForSend] = useState([]);
+  const [attachments, setAttachments] = useState([]);
 
   // UI states
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [openAlert, setOpenAlert] = useState<boolean>(false);
-  const [alertMessage, setAlertMessage] = useState<string>('');
-  const [alertType, setAlertType] = useState<'success' | 'error' | 'info'>('success');
-  const [showGroupModal, setShowGroupModal] = useState<boolean>(false);
-  const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
-  const [showGroupDeleteModal, setShowGroupDeleteModal] = useState<boolean>(false);
-  const [groupToDelete, setGroupToDelete] = useState<string | null>(null);
-  const [showGroupEmailsModal, setShowGroupEmailsModal] = useState<boolean>(false);
-  const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [openAlert, setOpenAlert] = useState(false);
+  const [alertMessage, setAlertMessage] = useState('');
+  const [alertType, setAlertType] = useState('success');
+  const [showGroupModal, setShowGroupModal] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showGroupDeleteModal, setShowGroupDeleteModal] = useState(false);
+  const [groupToDelete, setGroupToDelete] = useState(null);
+  const [showGroupEmailsModal, setShowGroupEmailsModal] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState(null);
 
   // Refs
-  const excelInputRef = useRef<HTMLInputElement>(null);
-  const attachmentInputRef = useRef<HTMLInputElement>(null);
-  const groupExcelInputRef = useRef<HTMLInputElement>(null);
-  const sendExcelInputRef = useRef<HTMLInputElement>(null);
+  const excelInputRef = useRef(null);
+  const attachmentInputRef = useRef(null);
+  const groupExcelInputRef = useRef(null);
+  const sendExcelInputRef = useRef(null);
+  const baseURL = import.meta.env.VITE_base_URL;
 
   // Check authentication status on mount
   useEffect(() => {
@@ -264,7 +234,7 @@ function App() {
   // Check if user is authenticated
   const checkAuthStatus = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/status', {
+      const response = await fetch(`${baseURL}/api/status`, {
         credentials: 'include',
       });
       const result = await response.json();
@@ -280,9 +250,9 @@ function App() {
   };
 
   // Handle login
-  const handleLogin = async (email: string, password: string) => {
+  const handleLogin = async (email, password) => {
     try {
-      const response = await fetch('http://localhost:3001/api/login', {
+      const response = await fetch(`${baseURL}/api/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -305,7 +275,7 @@ function App() {
   // Handle logout
   const handleLogout = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/logout', {
+      const response = await fetch(`${baseURL}/api/logout`, {
         method: 'POST',
         credentials: 'include',
       });
@@ -335,7 +305,7 @@ function App() {
   // Load data from server
   const loadDataFromServer = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/get-data', {
+      const response = await fetch(`${baseURL}/api/get-data`, {
         credentials: 'include',
       });
       const result = await response.json();
@@ -352,9 +322,9 @@ function App() {
   };
 
   // Save data to server
-  const saveDataToServer = async (newEmails?: string[], newGroups?: Group[]) => {
+  const saveDataToServer = async (newEmails, newGroups) => {
     try {
-      const response = await fetch('http://localhost:3001/api/save-data', {
+      const response = await fetch(`${baseURL}/api/save-data`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -378,7 +348,7 @@ function App() {
   const clearAllData = async () => {
     setShowConfirmModal(false);
     try {
-      await fetch('http://localhost:3001/api/clear-data', {
+      await fetch(`${baseURL}/api/clear-data`, {
         method: 'POST',
         credentials: 'include',
       });
@@ -400,7 +370,7 @@ function App() {
   };
 
   // Custom Alert function using NewCustomAlert
-  const showCustomAlert = (msg: string, type: 'success' | 'error' | 'info' = 'success') => {
+  const showCustomAlert = (msg, type = 'success') => {
     setAlertMessage(msg);
     setAlertType(type);
     setOpenAlert(true);
@@ -424,7 +394,7 @@ function App() {
   };
 
   // Remove email
-  const removeEmail = async (emailToRemove: string) => {
+  const removeEmail = async (emailToRemove) => {
     const newEmails = emails.filter((email) => email !== emailToRemove);
     setEmails(newEmails);
     await saveDataToServer(newEmails);
@@ -432,7 +402,7 @@ function App() {
   };
 
   // Handle file upload
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, setSelectedCallback?: (imported: string[]) => void) => {
+  const handleFileUpload = async (event, setSelectedCallback) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -441,7 +411,7 @@ function App() {
 
     try {
       setIsLoading(true);
-      const response = await fetch('http://localhost:3001/api/upload-file', {
+      const response = await fetch(`${baseURL}/api/upload-file`, {
         method: 'POST',
         body: formData,
         credentials: 'include',
@@ -471,7 +441,7 @@ function App() {
   // Create new group
   const createGroup = async () => {
     if (newGroupName && selectedEmailsForGroup.length > 0) {
-      const newGroup: Group = {
+      const newGroup = {
         id: Date.now().toString(),
         name: newGroupName,
         emails: [...selectedEmailsForGroup],
@@ -489,7 +459,7 @@ function App() {
   };
 
   // Edit group
-  const startEditGroup = (group: Group) => {
+  const startEditGroup = (group) => {
     setEditingGroup(group);
     setNewGroupName(group.name);
     setSelectedEmailsForGroup(group.emails);
@@ -527,19 +497,19 @@ function App() {
   };
 
   // Show group delete confirmation
-  const confirmDeleteGroup = (groupId: string) => {
+  const confirmDeleteGroup = (groupId) => {
     setGroupToDelete(groupId);
     setShowGroupDeleteModal(true);
   };
 
   // Show group emails
-  const showGroupEmails = (group: Group) => {
+  const showGroupEmails = (group) => {
     setSelectedGroup(group);
     setShowGroupEmailsModal(true);
   };
 
   // Export group to CSV
-  const exportGroupToCSV = (group: Group) => {
+  const exportGroupToCSV = (group) => {
     const csvContent = "data:text/csv;charset=utf-8,Emails\n" + group.emails.join("\n");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
@@ -552,28 +522,28 @@ function App() {
   };
 
   // Handle file upload for groups
-  const handleGroupFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleGroupFileUpload = async (event) => {
     await handleFileUpload(event, setSelectedEmailsForGroup);
   };
 
   // Handle file upload for sending
-  const handleSendFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSendFileUpload = async (event) => {
     await handleFileUpload(event, setSelectedEmailsForSend);
   };
 
   // Handle attachments
-  const handleAttachments = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAttachments = (event) => {
     const files = Array.from(event.target.files || []);
     setAttachments([...attachments, ...files]);
   };
 
-  const removeAttachment = (index: number) => {
+  const removeAttachment = (index) => {
     setAttachments(attachments.filter((_, i) => i !== index));
   };
 
   // Get all selected emails for sending
   const getAllSelectedEmails = () => {
-    const allEmails = new Set<string>();
+    const allEmails = new Set();
 
     selectedEmailsForSend.forEach((email) => allEmails.add(email));
 
@@ -607,7 +577,7 @@ function App() {
 
     try {
       setIsLoading(true);
-      const response = await fetch('http://localhost:3001/api/send-emails', {
+      const response = await fetch(`${baseURL}/api/send-emails`, {
         method: 'POST',
         body: formData,
         credentials: 'include',
@@ -630,7 +600,7 @@ function App() {
     }
   };
 
-  const getFileIcon = (fileName: string) => {
+  const getFileIcon = (fileName) => {
     const extension = fileName.split('.').pop()?.toLowerCase();
     if (['jpg', 'jpeg', 'png', 'gif'].includes(extension || '')) return <Image className="w-4 h-4 text-slate-500" />;
     if (['mp4', 'avi', 'mov'].includes(extension || '')) return <Video className="w-4 h-4 text-slate-500" />;
@@ -639,8 +609,8 @@ function App() {
   };
 
   // Convert emails to react-select options
-  const emailOptions: Option[] = emails.map((email) => ({ value: email, label: email }));
-  const groupOptions: Option[] = groups.map((group) => ({
+  const emailOptions = emails.map((email) => ({ value: email, label: email }));
+  const groupOptions = groups.map((group) => ({
     value: group.id,
     label: `${group.name} (${group.emails.length} إيميل)`,
   }));
@@ -736,7 +706,7 @@ function App() {
                       isMulti
                       options={emailOptions}
                       value={emailOptions.filter((option) => selectedEmailsForGroup.includes(option.value))}
-                      onChange={(selected: MultiValue<Option>) =>
+                      onChange={(selected) =>
                         setSelectedEmailsForGroup(selected ? selected.map((s) => s.value) : [])
                       }
                       styles={selectStyles}
@@ -846,7 +816,7 @@ function App() {
             ].map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as 'emails' | 'groups' | 'send')}
+                onClick={() => setActiveTab(tab.id)}
                 className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 text-sm font-medium transition-colors duration-150 ${
                   activeTab === tab.id
                     ? 'bg-blue-500 text-white'
@@ -1050,7 +1020,7 @@ function App() {
                         isMulti
                         options={emailOptions}
                         value={emailOptions.filter((option) => selectedEmailsForSend.includes(option.value))}
-                        onChange={(selected: MultiValue<Option>) =>
+                        onChange={(selected) =>
                           setSelectedEmailsForSend(selected ? selected.map((s) => s.value) : [])
                         }
                         styles={selectStyles}
@@ -1066,7 +1036,7 @@ function App() {
                         isMulti
                         options={groupOptions}
                         value={groupOptions.filter((option) => selectedGroupsForSend.includes(option.value))}
-                        onChange={(selected: MultiValue<Option>) =>
+                        onChange={(selected) =>
                           setSelectedGroupsForSend(selected ? selected.map((s) => s.value) : [])
                         }
                         styles={selectStyles}
