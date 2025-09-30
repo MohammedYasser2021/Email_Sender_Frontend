@@ -123,7 +123,7 @@ const Login = ({ onLogin }) => {
     try {
       await onLogin(email, password);
     } catch (error) {
-      showCustomAlert('فشل تسجيل الدخول: بيانات غير صحيحة', 'error');
+      showCustomAlert(`فشل تسجيل الدخول: ${error.message}`, 'error');
     } finally {
       setIsLoading(false);
     }
@@ -186,6 +186,8 @@ const Login = ({ onLogin }) => {
 function App() {
   // Authentication state
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
+  const [userPassword, setUserPassword] = useState('');
 
   // Core states
   const [emails, setEmails] = useState([]);
@@ -228,24 +230,39 @@ function App() {
 
   // Check authentication status on mount
   useEffect(() => {
-    checkAuthStatus();
-  }, []);
+    if (userEmail && userPassword) {
+      checkAuthStatus();
+    }
+  }, [userEmail, userPassword]);
 
   // Check if user is authenticated
   const checkAuthStatus = async () => {
     try {
+      setIsLoading(true);
       const response = await fetch(`${baseURL}/api/status`, {
-        credentials: 'include',
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Email': userEmail,
+          'X-Password': userPassword,
+        },
       });
       const result = await response.json();
       if (result.success) {
         setIsAuthenticated(true);
-        loadDataFromServer();
+        await loadDataFromServer();
       } else {
         setIsAuthenticated(false);
+        setUserEmail('');
+        setUserPassword('');
       }
     } catch (error) {
       setIsAuthenticated(false);
+      setUserEmail('');
+      setUserPassword('');
+      showCustomAlert('خطأ في التحقق من الحالة', 'error');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -256,49 +273,20 @@ function App() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
-        credentials: 'include',
       });
       const result = await response.json();
       if (result.success) {
+        setUserEmail(email);
+        setUserPassword(password);
         setIsAuthenticated(true);
-        loadDataFromServer();
+        await loadDataFromServer();
         showCustomAlert('تم تسجيل الدخول بنجاح', 'success');
       } else {
         throw new Error(result.error);
       }
     } catch (error) {
-      showCustomAlert('فشل تسجيل الدخول: بيانات غير صحيحة', 'error');
+      showCustomAlert(`فشل تسجيل الدخول: ${error.message}`, 'error');
       throw error;
-    }
-  };
-
-  // Handle logout
-  const handleLogout = async () => {
-    try {
-      const response = await fetch(`${baseURL}/api/logout`, {
-        method: 'POST',
-        credentials: 'include',
-      });
-      const result = await response.json();
-      if (result.success) {
-        setIsAuthenticated(false);
-        setEmails([]);
-        setGroups([]);
-        setCurrentEmail('');
-        setNewGroupName('');
-        setSelectedEmailsForGroup([]);
-        setEditingGroup(null);
-        setEmailSubject('');
-        setEmailContent('');
-        setAttachments([]);
-        setSelectedEmailsForSend([]);
-        setSelectedGroupsForSend([]);
-        showCustomAlert('تم تسجيل الخروج بنجاح', 'success');
-      } else {
-        showCustomAlert('خطأ في تسجيل الخروج', 'error');
-      }
-    } catch (error) {
-      showCustomAlert('خطأ في تسجيل الخروج', 'error');
     }
   };
 
@@ -306,18 +294,23 @@ function App() {
   const loadDataFromServer = async () => {
     try {
       const response = await fetch(`${baseURL}/api/get-data`, {
-        credentials: 'include',
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Email': userEmail,
+          'X-Password': userPassword,
+        },
       });
       const result = await response.json();
       if (result.success) {
         setEmails(result.emails || []);
         setGroups(result.groups || []);
       } else {
-        showCustomAlert('Error loading data: ' + result.error, 'error');
+        showCustomAlert('خطأ في تحميل البيانات: ' + result.error, 'error');
       }
     } catch (error) {
       console.error('Error loading data:', error);
-      showCustomAlert('Error loading data', 'error');
+      showCustomAlert('خطأ في تحميل البيانات', 'error');
     }
   };
 
@@ -326,31 +319,38 @@ function App() {
     try {
       const response = await fetch(`${baseURL}/api/save-data`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Email': userEmail,
+          'X-Password': userPassword,
+        },
         body: JSON.stringify({
           emails: newEmails || emails,
           groups: newGroups || groups,
         }),
-        credentials: 'include',
       });
       const result = await response.json();
       if (!result.success) {
         console.error('Error saving data:', result.error);
-        showCustomAlert('Error saving data', 'error');
+        showCustomAlert('خطأ في حفظ البيانات', 'error');
       }
     } catch (error) {
       console.error('Error saving data:', error);
-      showCustomAlert('Error saving data', 'error');
+      showCustomAlert('خطأ في حفظ البيانات', 'error');
     }
   };
 
-  // Clear all data (end session)
+  // Clear all data
   const clearAllData = async () => {
     setShowConfirmModal(false);
     try {
       await fetch(`${baseURL}/api/clear-data`, {
         method: 'POST',
-        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Email': userEmail,
+          'X-Password': userPassword,
+        },
       });
       setEmails([]);
       setGroups([]);
@@ -363,7 +363,10 @@ function App() {
       setAttachments([]);
       setSelectedEmailsForSend([]);
       setSelectedGroupsForSend([]);
-      showCustomAlert('تم مسح جميع البيانات وإنهاء الجلسة', 'success');
+      setIsAuthenticated(false);
+      setUserEmail('');
+      setUserPassword('');
+      showCustomAlert('تم مسح جميع البيانات', 'success');
     } catch (error) {
       showCustomAlert('خطأ في مسح البيانات', 'error');
     }
@@ -408,13 +411,14 @@ function App() {
 
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('email', userEmail);
+    formData.append('password', userPassword);
 
     try {
       setIsLoading(true);
       const response = await fetch(`${baseURL}/api/upload-file`, {
         method: 'POST',
         body: formData,
-        credentials: 'include',
       });
       const result = await response.json();
       if (result.success) {
@@ -567,6 +571,8 @@ function App() {
     }
 
     const formData = new FormData();
+    formData.append('email', userEmail);
+    formData.append('password', userPassword);
     formData.append('subject', emailSubject || 'رسالة بدون عنوان');
     formData.append('content', emailContent || 'رسالة بدون محتوى');
     formData.append('emails', JSON.stringify(recipientEmails));
@@ -579,8 +585,11 @@ function App() {
       setIsLoading(true);
       const response = await fetch(`${baseURL}/api/send-emails`, {
         method: 'POST',
+        headers: {
+          'X-Email': userEmail,
+          'X-Password': userPassword,
+        },
         body: formData,
-        credentials: 'include',
       });
       const result = await response.json();
       if (result.success) {
@@ -633,11 +642,11 @@ function App() {
         duration={3000}
       />
 
-      {/* Confirm Modal for Ending Session */}
+      {/* Confirm Modal for Clearing Data */}
       <ConfirmModal
         isOpen={showConfirmModal}
-        title="تأكيد إنهاء الجلسة"
-        message="هل أنت متأكد من مسح جميع البيانات وإنهاء الجلسة؟"
+        title="تأكيد مسح البيانات"
+        message="هل أنت متأكد من مسح جميع البيانات؟"
         onConfirm={clearAllData}
         onCancel={() => setShowConfirmModal(false)}
       />
@@ -779,7 +788,11 @@ function App() {
             </div>
             <div className="flex gap-3">
               <button
-                onClick={handleLogout}
+                onClick={() => {
+                  setIsAuthenticated(false);
+                  setUserEmail('');
+                  setUserPassword('');
+                }}
                 className="flex items-center gap-2 px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50 text-sm font-medium text-slate-700 transition-colors duration-150"
               >
                 <LogIn className="w-4 h-4" />
@@ -790,7 +803,7 @@ function App() {
                 className="flex items-center gap-2 px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50 text-sm font-medium text-slate-700 transition-colors duration-150"
               >
                 <Power className="w-4 h-4" />
-                إنهاء الجلسة
+                مسح البيانات
               </button>
             </div>
           </div>
