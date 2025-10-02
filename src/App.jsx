@@ -151,7 +151,7 @@ function App() {
   const attachmentInputRef = useRef(null)
   const groupExcelInputRef = useRef(null)
   const sendExcelInputRef = useRef(null)
-  const baseURL = import.meta.env.VITE_base_URL
+  const baseURL = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3001"
 
   useEffect(() => {
     loadDataFromServer()
@@ -413,6 +413,9 @@ function App() {
   const sendEmails = async () => {
     const recipientEmails = getAllSelectedEmails()
 
+    console.log("[v0] Starting sendEmails function")
+    console.log("[v0] Recipient emails:", recipientEmails.length)
+
     if (recipientEmails.length === 0) {
       showCustomAlert("يرجى اختيار مستلمين للرسالة", "error")
       return
@@ -427,27 +430,44 @@ function App() {
       formData.append(`attachment${index}`, file)
     })
 
+    console.log("[v0] FormData prepared, making request to:", `${baseURL}/api/send-emails`)
+
     try {
       setIsLoading(true)
       const response = await fetch(`${baseURL}/api/send-emails`, {
         method: "POST",
         body: formData,
       })
-      const result = await response.json()
+
+      console.log("[v0] Response status:", response.status)
+
+      let result
+      try {
+        result = await response.json()
+        console.log("[v0] Response data:", result)
+      } catch (jsonError) {
+        console.error("[v0] Failed to parse JSON response:", jsonError)
+        showCustomAlert("خطأ في الاتصال بالخادم. تأكد من أن الخادم يعمل على: " + baseURL, "error")
+        return
+      }
+
       if (result.success) {
-        showCustomAlert(`تم إرسال ${recipientEmails.length} رسالة بنجاح`, "success")
+        showCustomAlert(`تم إرسال ${result.sent || recipientEmails.length} رسالة بنجاح`, "success")
         setEmailSubject("")
         setEmailContent("")
         setAttachments([])
         setSelectedEmailsForSend([])
         setSelectedGroupsForSend([])
       } else {
+        console.error("[v0] Send failed:", result.error)
         showCustomAlert("خطأ في الإرسال: " + result.error, "error")
       }
     } catch (error) {
-      showCustomAlert("خطأ في الإرسال", "error")
+      console.error("[v0] Network error:", error)
+      showCustomAlert("خطأ في الاتصال بالخادم. تأكد من أن الخادم يعمل على: " + baseURL, "error")
     } finally {
       setIsLoading(false)
+      console.log("[v0] sendEmails function completed")
     }
   }
 
