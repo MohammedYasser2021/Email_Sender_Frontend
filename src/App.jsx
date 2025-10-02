@@ -151,7 +151,7 @@ function App() {
   const attachmentInputRef = useRef(null)
   const groupExcelInputRef = useRef(null)
   const sendExcelInputRef = useRef(null)
-  const baseURL = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3001"
+  const baseURL = import.meta.env.VITE_base_URL"
 
   useEffect(() => {
     loadDataFromServer()
