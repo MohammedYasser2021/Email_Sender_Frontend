@@ -152,6 +152,7 @@ function App() {
   const groupExcelInputRef = useRef(null)
   const sendExcelInputRef = useRef(null)
   const baseURL = import.meta.env.VITE_base_URL
+  console.log("Base URL:", import.meta.env.VITE_base_URL)
 
   useEffect(() => {
     loadDataFromServer()
