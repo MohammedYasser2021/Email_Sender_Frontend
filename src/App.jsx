@@ -413,8 +413,9 @@ function App() {
   const sendEmails = async () => {
     const recipientEmails = getAllSelectedEmails()
 
-    console.log("[v0] Starting sendEmails function")
-    console.log("[v0] Recipient emails:", recipientEmails.length)
+    console.log("[v0] ========== بدء عملية الإرسال ==========")
+    console.log("[v0] عدد المستلمين:", recipientEmails.length)
+    console.log("[v0] عنوان الخادم:", baseURL)
 
     if (recipientEmails.length === 0) {
       showCustomAlert("يرجى اختيار مستلمين للرسالة", "error")
@@ -430,28 +431,52 @@ function App() {
       formData.append(`attachment${index}`, file)
     })
 
-    console.log("[v0] FormData prepared, making request to:", `${baseURL}/api/send-emails`)
+    console.log("[v0] تم تجهيز البيانات")
+    console.log("[v0] العنوان:", emailSubject || "رسالة بدون عنوان")
+    console.log("[v0] عدد المرفقات:", attachments.length)
+    console.log("[v0] الرابط الكامل:", `${baseURL}/api/send-emails`)
 
     try {
       setIsLoading(true)
+      console.log("[v0] بدء الطلب إلى الخادم...")
+
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => {
+        console.log("[v0] انتهت مهلة الطلب (60 ثانية)")
+        controller.abort()
+      }, 60000) // 60 second timeout
+
       const response = await fetch(`${baseURL}/api/send-emails`, {
         method: "POST",
         body: formData,
+        signal: controller.signal,
       })
 
-      console.log("[v0] Response status:", response.status)
+      clearTimeout(timeoutId)
+      console.log("[v0] تم استلام الرد من الخادم")
+      console.log("[v0] حالة الرد:", response.status)
+      console.log("[v0] نوع المحتوى:", response.headers.get("content-type"))
+
+      if (!response.ok) {
+        console.error("[v0] الخادم أرجع خطأ:", response.status, response.statusText)
+        showCustomAlert(`خطأ من الخادم: ${response.status} ${response.statusText}`, "error")
+        return
+      }
 
       let result
       try {
-        result = await response.json()
-        console.log("[v0] Response data:", result)
+        const responseText = await response.text()
+        console.log("[v0] نص الرد الخام:", responseText.substring(0, 200))
+        result = JSON.parse(responseText)
+        console.log("[v0] تم تحليل الرد بنجاح:", result)
       } catch (jsonError) {
-        console.error("[v0] Failed to parse JSON response:", jsonError)
+        console.error("[v0] فشل في تحليل JSON:", jsonError)
         showCustomAlert("خطأ في الاتصال بالخادم. تأكد من أن الخادم يعمل على: " + baseURL, "error")
         return
       }
 
       if (result.success) {
+        console.log("[v0] ✅ تم الإرسال بنجاح!")
         showCustomAlert(`تم إرسال ${result.sent || recipientEmails.length} رسالة بنجاح`, "success")
         setEmailSubject("")
         setEmailContent("")
@@ -459,15 +484,25 @@ function App() {
         setSelectedEmailsForSend([])
         setSelectedGroupsForSend([])
       } else {
-        console.error("[v0] Send failed:", result.error)
+        console.error("[v0] ❌ فشل الإرسال:", result.error)
         showCustomAlert("خطأ في الإرسال: " + result.error, "error")
       }
     } catch (error) {
-      console.error("[v0] Network error:", error)
-      showCustomAlert("خطأ في الاتصال بالخادم. تأكد من أن الخادم يعمل على: " + baseURL, "error")
+      console.error("[v0] ❌ خطأ في الشبكة:", error)
+
+      if (error.name === "AbortError") {
+        showCustomAlert("انتهت مهلة الطلب. الخادم لا يستجيب. تأكد من أن الخادم يعمل على: " + baseURL, "error")
+      } else if (error.message.includes("Failed to fetch")) {
+        showCustomAlert(
+          "فشل الاتصال بالخادم. تأكد من:\n1. الخادم يعمل على: " + baseURL + "\n2. لا يوجد حظر CORS\n3. الرابط صحيح",
+          "error",
+        )
+      } else {
+        showCustomAlert("خطأ في الاتصال: " + error.message, "error")
+      }
     } finally {
       setIsLoading(false)
-      console.log("[v0] sendEmails function completed")
+      console.log("[v0] ========== انتهت عملية الإرسال ==========")
     }
   }
 
